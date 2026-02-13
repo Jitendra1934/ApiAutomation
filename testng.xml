@@ -5,7 +5,11 @@
         <classes>
             <class name="TestCases.RestFullBookerTestCases.RestFullBookerAPI">
                 <methods>
-                    <include name="authToken"/>
+                    <include name="getBooking"/>
+                    <include name="getBookingById"/>
+                    <include name="createBooking"/>
+                    <include name="updateBooking"/>
+                    <include name="deleteBooking"/>
                 </methods>
             </class>
         </classes>

@@ -2,8 +2,10 @@ package TestCases.RestFullBookerTestCases;
 
 import PojoClases.CreateBookingPojoClasses.Booking;
 import PojoClases.CreateBookingPojoClasses.BookingDates;
+import PojoClases.PartialUpdatePojo.PartialPojo;
 import PojoClases.Token.TokenPojo;
 import Utilities.FileReader;
+import Utilities.Log;
 import com.google.gson.Gson;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -25,7 +27,18 @@ public class RestFullBookerAPI {
     Response r;
     ValidatableResponse vr;
     public static int bookingid;
-    public String authToken() throws IOException {
+
+    String token;
+
+    {
+        try {
+            token = authToken();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public  String authToken() throws IOException {
 
         TokenPojo p = new TokenPojo();
         p.setUsername(FileReader.readProperty("username"));
@@ -46,6 +59,7 @@ public class RestFullBookerAPI {
         return accessToken;
 
     }
+
 
     @Test(priority = 1)
     public void getBooking() throws IOException {
@@ -134,7 +148,6 @@ public class RestFullBookerAPI {
         payload.setBookingdates(dates);
         payload.setAdditionalneeds("Pasta");
 
-        String token = authToken();
 
         rs = RestAssured.given();
 
@@ -157,4 +170,64 @@ public class RestFullBookerAPI {
         Assert.assertEquals(firstname, "Ajay");
     }
 
+    @Test(priority = 4)
+    public void partialUpdate() throws IOException {
+        /*
+        curl -X PUT \
+  https://restful-booker.herokuapp.com/booking/1 \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' \
+  -H 'Cookie: token=abc123' \
+  -d '{
+    "firstname" : "James",
+    "lastname" : "Brown"
+    }'*/
+
+        Log.info("Partial Update started");
+        rs = RestAssured.given();
+        rs.baseUri(FileReader.readProperty("baseuri"));
+        rs.basePath("/booking/"+bookingid);
+        Log.info("bookimg id : "+bookingid);
+        rs.header("Content-Type", "application/json");
+        rs.header("Accept","application/json");
+
+        rs.header("Cookie", "token="+token);
+
+        PartialPojo p = new PartialPojo();
+        p.setFirstname("jitendra");
+        p.setLastname("punnam");
+
+        Gson g = new Gson();
+        String payload = g.toJson(p);
+        Log.info("payload of partial update");
+        System.out.println(payload);
+
+        rs.body(payload);
+
+        r = rs.when().patch();
+
+        vr = r.then().statusCode(200).assertThat().body("lastname", notNullValue());
+        String lastname = r.jsonPath().getString("lastname");
+
+        Assert.assertEquals(lastname, "punnam");
+    }
+
+    @Test(priority = 5)
+    public void deleteBooking() throws IOException {
+
+        /*
+        *  https://restful-booker.herokuapp.com/booking/1 \
+  -H 'Content-Type: application/json' \
+  -H 'Cookie: token=abc123'*/
+
+        rs = RestAssured.given();
+        rs.baseUri(FileReader.readProperty("baseuri"));
+        rs.basePath("/booking/"+bookingid);
+        rs.header("Content-Type","application/json");
+        rs.header("Cookie","token="+token);
+
+        r = rs.when().delete();
+
+        vr = r.then().statusCode(201);
+    }
 }
